@@ -28,7 +28,7 @@ export default function MasonryGrid() {
     const fetchInitialImages = async () => {
       try {
         const q = query(
-          collection(db, 'images'), 
+          collection(db, 'albums'), 
           orderBy('createdAt', 'desc'),
           limit(ITEMS_PER_PAGE)
         );
@@ -36,7 +36,15 @@ export default function MasonryGrid() {
         
         const fetchedImages: ImageItem[] = [];
         querySnapshot.forEach((doc) => {
-          fetchedImages.push({ id: doc.id, ...doc.data() } as ImageItem);
+          const data = doc.data();
+          fetchedImages.push({ 
+            id: doc.id, 
+            url: data.coverUrl, // Map coverUrl to url for ImageCard
+            title: data.title,
+            category: data.category,
+            href: `/album/${doc.id}`, // Add href for Album navigation
+            ...data 
+          } as ImageItem);
         });
         
         setImages(fetchedImages);
@@ -65,7 +73,7 @@ export default function MasonryGrid() {
 
     try {
       const q = query(
-        collection(db, 'images'),
+        collection(db, 'albums'),
         orderBy('createdAt', 'desc'),
         startAfter(lastDoc),
         limit(ITEMS_PER_PAGE)
@@ -75,7 +83,15 @@ export default function MasonryGrid() {
       
       const newImages: ImageItem[] = [];
       querySnapshot.forEach((doc) => {
-        newImages.push({ id: doc.id, ...doc.data() } as ImageItem);
+        const data = doc.data();
+        newImages.push({ 
+          id: doc.id, 
+          url: data.coverUrl,
+          title: data.title,
+          category: data.category,
+          href: `/album/${doc.id}`,
+          ...data 
+        } as ImageItem);
       });
       
       setImages((prev) => [...prev, ...newImages]);
