@@ -1,9 +1,9 @@
 'use client';
 import { db } from '../../lib/firebase.js';
-import { collection, addDoc, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { UploadCloud, X, Loader2, CheckCircle2, Image as ImageIcon, FolderPlus } from 'lucide-react';
+import { UploadCloud, X, Loader2, CheckCircle2, Image as ImageIcon, FolderPlus, Clock } from 'lucide-react';
 import Image from 'next/image';
 
 enum UploadState {
@@ -14,7 +14,7 @@ enum UploadState {
 }
 
 export default function AdminUpload() {
-  const [activeTab, setActiveTab] = useState<'album' | 'photos'>('album');
+  const [activeTab, setActiveTab] = useState<'album' | 'photos' | 'recent'>('album');
   const [albums, setAlbums] = useState<{id: string, title: string}[]>([]);
 
   // ALBUM STATE
@@ -29,8 +29,11 @@ export default function AdminUpload() {
   const [selectedAlbumId, setSelectedAlbumId] = useState('');
   const [photosStatus, setPhotosStatus] = useState<UploadState>(UploadState.IDLE);
 
+  // RECENT PHOTOS STATE
+  const [recentPhotos, setRecentPhotos] = useState<any[]>([]);
+  const [loadingRecents, setLoadingRecents] = useState(false);
+
   useEffect(() => {
-    // Fetch albums for the dropdown
     const fetchAlbums = async () => {
       try {
         const q = query(collection(db, 'albums'), orderBy('createdAt', 'desc'));
@@ -44,8 +47,25 @@ export default function AdminUpload() {
         console.error("Error fetching albums:", err);
       }
     };
+
+    const fetchRecents = async () => {
+      setLoadingRecents(true);
+      try {
+        const q = query(collection(db, 'photos'), orderBy('createdAt', 'desc'), limit(15));
+        const snap = await getDocs(q);
+        const fetchedPhotos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setRecentPhotos(fetchedPhotos);
+      } catch (err) {
+        console.error("Error fetching recent photos:", err);
+      } finally {
+        setLoadingRecents(false);
+      }
+    };
+
     if (activeTab === 'photos') {
       fetchAlbums();
+    } else if (activeTab === 'recent') {
+      fetchRecents();
     }
   }, [activeTab]);
 
@@ -137,7 +157,6 @@ export default function AdminUpload() {
     setPhotosStatus(UploadState.UPLOADING);
 
     try {
-      // Upload all photos in parallel
       const uploadPromises = photoFiles.map(async (pItem) => {
         const formData = new FormData();
         formData.append('file', pItem.file);
@@ -152,7 +171,6 @@ export default function AdminUpload() {
 
       const urls = await Promise.all(uploadPromises);
 
-      // Save to Firebase
       const firestorePromises = urls.map(url => {
         if (!url) return Promise.resolve();
         return addDoc(collection(db, 'photos'), {
@@ -168,7 +186,8 @@ export default function AdminUpload() {
       setTimeout(() => {
         setPhotoFiles([]);
         setPhotosStatus(UploadState.IDLE);
-      }, 3000);
+        setActiveTab('recent'); // Switch to recent tab to see the newly uploaded photos
+      }, 2000);
     } catch (error) {
       console.error(error);
       setPhotosStatus(UploadState.ERROR);
@@ -178,22 +197,27 @@ export default function AdminUpload() {
   // UI
   return (
     <div className="w-full">
-      <div className="flex space-x-4 mb-8 border-b border-gray-100 pb-2">
+      <div className="flex space-x-4 mb-8 border-b border-gray-100 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('album')}
-          className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'album' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
+          className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'album' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
         >
           <FolderPlus size={18} /> Crear Álbum
         </button>
         <button
           onClick={() => setActiveTab('photos')}
-          className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'photos' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
+          className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'photos' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
         >
           <ImageIcon size={18} /> Subir Fotos
         </button>
+        <button
+          onClick={() => setActiveTab('recent')}
+          className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'recent' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-400 hover:text-gray-700'}`}
+        >
+          <Clock size={18} /> Fotos Recientes
+        </button>
       </div>
 
-      {/* --- TAB 1: ALBUMS --- */}
       {activeTab === 'album' && (
         !albumFile ? (
           <div {...getAlbumProps()} className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-colors ${albumDrag ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}>
@@ -233,7 +257,6 @@ export default function AdminUpload() {
         )
       )}
 
-      {/* --- TAB 2: PHOTOS --- */}
       {activeTab === 'photos' && (
         <form onSubmit={handleUploadPhotos} className="space-y-6">
           <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
@@ -273,6 +296,31 @@ export default function AdminUpload() {
             </div>
           )}
         </form>
+      )}
+
+      {activeTab === 'recent' && (
+        <div className="space-y-6">
+          <div className="bg-white p-4">
+            <h2 className="text-lg font-medium text-gray-900 mb-1">Últimas 15 fotografías subidas</h2>
+            <p className="text-sm text-gray-500 mb-6">Esta vista es solo para confirmar que tus fotos se subieron correctamente a Cloudinary y Firebase.</p>
+            
+            {loadingRecents ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-gray-400" size={32} />
+              </div>
+            ) : recentPhotos.length === 0 ? (
+              <p className="text-center text-gray-500 py-12 bg-gray-50 rounded-xl border border-gray-100">No hay fotos registradas aún.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                {recentPhotos.map((photo) => (
+                  <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100 shadow-sm">
+                    <Image src={photo.url} alt="Recent photo" fill className="object-cover hover:scale-105 transition-transform" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -19,7 +19,7 @@ export default function AlbumPage() {
     const fetchAlbumData = async () => {
       try {
         if (!id) return;
-        
+
         // Fetch Album Info
         const albumRef = doc(db, 'albums', id as string);
         const albumSnap = await getDoc(albumRef);
@@ -58,13 +58,13 @@ export default function AlbumPage() {
   return (
     <div className="w-full bg-white min-h-screen pb-20">
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <button 
+        <button
           onClick={() => router.push('/')}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-8 text-sm font-medium"
         >
           <ArrowLeft size={16} /> Volver al Portafolio
         </button>
-        
+
         <div className="max-w-3xl mb-12">
           {albumData ? (
             <>
@@ -78,7 +78,7 @@ export default function AlbumPage() {
             <h1 className="text-3xl font-light text-gray-900">Álbum Desconocido</h1>
           )}
         </div>
-        
+
         {photos.length === 0 ? (
           <div className="w-full text-center py-24 text-gray-500 bg-gray-50 rounded-2xl border border-gray-100">
             <p className="text-lg">Este álbum aún no tiene fotos.</p>
