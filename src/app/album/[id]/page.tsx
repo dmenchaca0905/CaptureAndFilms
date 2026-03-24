@@ -86,7 +86,7 @@ export default function AlbumPage() {
         ) : (
           <div className="w-full">
             <Masonry
-              breakpointCols={{ default: 3, 1100: 2, 700: 1 }}
+              breakpointCols={{ default: 3, 1100: 2, 700: 2 }}
               className="flex w-full gap-6 auto-rows-auto mb-12"
               columnClassName="bg-clip-padding flex flex-col gap-6"
             >

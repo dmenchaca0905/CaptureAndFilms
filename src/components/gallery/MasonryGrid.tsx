@@ -112,7 +112,7 @@ export default function MasonryGrid() {
   const breakpointColumnsObj = {
     default: 3,
     1100: 2,
-    700: 1
+    700: 2
   };
 
   if (loading) {
