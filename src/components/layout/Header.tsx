@@ -5,17 +5,17 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full bg-gray-50/95 backdrop-blur-md border-b border-gray-200">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row min-h-[64px] items-center justify-between py-2 sm:py-0 gap-2 sm:gap-0">
+          <Link href="/" className="flex items-center gap-2 md:gap-3">
             <Image 
               src="/logo-app.png" 
               alt="CaptureAndFilms Logo" 
               width={100} 
               height={48} 
-              className="h-12 w-auto object-contain"
+              className="h-8 md:h-12 w-auto object-contain"
               priority
             />
-            <span className="text-3xl font-medium tracking-tighter text-gray-900 leading-none">
+            <span className="text-xl md:text-3xl font-medium tracking-tighter text-gray-900 leading-none">
               CaptureAndFilms
             </span>
           </Link>
